@@ -20,7 +20,7 @@
 
 #define CLOCK_DELAY_NOP8 "nop\n\t nop\n\t nop\n\t nop\n\t   nop\n\t nop\n\t nop\n\t nop\n\t"
 
-__attribute__((always_inline)) static inline void wait_cpuclock(unsigned int n) { /* n: 1..135 */
+__attribute__((always_inline)) static inline void wait_cpuclock(unsigned int n) { /* n: 1..199 */
     /* The argument n must be a constant expression.
      * That way, compiler optimization will remove unnecessary code. */
     if (n < 1) {
@@ -30,6 +30,22 @@ __attribute__((always_inline)) static inline void wait_cpuclock(unsigned int n) 
         unsigned int n8 = n / 8;
         n               = n - n8 * 8;
         switch (n8) {
+            case 24:
+                asm volatile(CLOCK_DELAY_NOP8::: "memory");
+            case 23:
+                asm volatile(CLOCK_DELAY_NOP8::: "memory");
+            case 22:
+                asm volatile(CLOCK_DELAY_NOP8::: "memory");
+            case 21:
+                asm volatile(CLOCK_DELAY_NOP8::: "memory");
+            case 20:
+                asm volatile(CLOCK_DELAY_NOP8::: "memory");
+            case 19:
+                asm volatile(CLOCK_DELAY_NOP8::: "memory");
+            case 18:
+                asm volatile(CLOCK_DELAY_NOP8::: "memory");
+            case 17:
+                asm volatile(CLOCK_DELAY_NOP8::: "memory");
             case 16:
                 asm volatile(CLOCK_DELAY_NOP8::: "memory");
             case 15:
