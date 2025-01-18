@@ -18,6 +18,9 @@
     },
     "processor": "STM32L432",
     "bootloader": "stm32-dfu",
+    "build": {
+        "lto": true
+    },
     "features": {
         "bootmagic": true,
         "mousekey": true,
