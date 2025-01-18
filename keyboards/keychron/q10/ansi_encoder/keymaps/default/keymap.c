@@ -70,3 +70,9 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [WIN_FN]   = { ENCODER_CCW_CW(RM_VALD, RM_VALU) }
 };
 #endif // ENCODER_MAP_ENABLE
+
+#if defined(DIP_SWITCH_ENABLE) && defined(DIP_SWITCH_MAP_ENABLE)
+const uint16_t PROGMEM dip_switch_map[NUM_DIP_SWITCHES][NUM_DIP_STATES] = {
+    DIP_SWITCH_OFF_ON(DF(MAC_BASE), DF(WIN_BASE)),
+};
+#endif // DIP_SWITCH_MAP_ENABLE
