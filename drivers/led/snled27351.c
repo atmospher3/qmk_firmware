@@ -85,24 +85,6 @@ void snled27351_select_page(uint8_t index, uint8_t page) {
     snled27351_write_register(index, SNLED27351_REG_COMMAND, page);
 }
 
-void snled27351_write_pwm_buffer(uint8_t index) {
-    // Assumes PG1 is already selected.
-    // Transmit PWM registers in 12 transfers of 16 bytes.
-
-    uint8_t buffer_index = driver_buffers[index].pwm_buffer_index;
-
-    // Iterate over the pwm_buffer contents at 16 byte intervals.
-    for (uint8_t i = 0; i < SNLED27351_PWM_REGISTER_COUNT; i += 16) {
-#if SNLED27351_I2C_PERSISTENCE > 0
-        for (uint8_t j = 0; j < SNLED27351_I2C_PERSISTENCE; j++) {
-            if (i2c_write_register(i2c_addresses[index] << 1, i, driver_buffers[index].pwm_buffer[buffer_index] + i, 16, SNLED27351_I2C_TIMEOUT) == I2C_STATUS_SUCCESS) break;
-        }
-#else
-        i2c_write_register(i2c_addresses[index] << 1, i, driver_buffers[index].pwm_buffer[buffer_index] + i, 16, SNLED27351_I2C_TIMEOUT);
-#endif
-    }
-}
-
 void snled27351_init_drivers(void) {
     i2c_init();
 
@@ -221,17 +203,39 @@ void snled27351_set_led_control_register(uint8_t index, bool red, bool green, bo
 }
 
 void snled27351_update_pwm_buffers(uint8_t index) {
-    if (memcmp(
-        (&driver_buffers[index].pwm_buffer[0]),
-        (&driver_buffers[index].pwm_buffer[1]),
-        sizeof driver_buffers[index].pwm_buffer[0]
-    )) {
-        snled27351_select_page(index, SNLED27351_COMMAND_PWM);
+    uint8_t buffer_index = driver_buffers[index].pwm_buffer_index;
+    bool page_selected = false;
 
-        snled27351_write_pwm_buffer(index);
+#define _INTEVALS 8
+    for (uint8_t i = 0; i < SNLED27351_PWM_REGISTER_COUNT; i += _INTEVALS) {
+        if (!memcmp(
+            driver_buffers[index].pwm_buffer[0] + i,
+            driver_buffers[index].pwm_buffer[1] + i,
+            _INTEVALS
+        )) {
+            continue;
+        } else if (!page_selected) {
+            snled27351_select_page(index, SNLED27351_COMMAND_PWM);
+            page_selected = true;
+        }
 
-        driver_buffers[index].pwm_buffer_index ^= 0x1;
+#if SNLED27351_I2C_PERSISTENCE > 0
+        for (uint8_t j = 0; j < SNLED27351_I2C_PERSISTENCE; j++) {
+            if (i2c_write_register(i2c_addresses[index] << 1, i, driver_buffers[index].pwm_buffer[buffer_index] + i, _INTEVALS, SNLED27351_I2C_TIMEOUT) == I2C_STATUS_SUCCESS) break;
+        }
+#else
+        i2c_write_register(i2c_addresses[index] << 1, i, driver_buffers[index].pwm_buffer[buffer_index] + i, _INTEVALS, SNLED27351_I2C_TIMEOUT);
+#endif
+
+        memcpy(
+            driver_buffers[index].pwm_buffer[buffer_index ^ 1] + i,
+            driver_buffers[index].pwm_buffer[buffer_index ^ 0] + i,
+            _INTEVALS
+        );
     }
+#undef _INTEVALS
+
+    driver_buffers[index].pwm_buffer_index ^= 0x1;
 }
 
 void snled27351_update_led_control_registers(uint8_t index) {
